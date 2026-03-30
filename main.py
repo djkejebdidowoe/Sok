@@ -8,10 +8,11 @@ import requests
 # ============================
 # 1️⃣ Підключення до Tailscale
 # ============================
-TAILSCALE_AUTHKEY = os.environ.get("tskey-auth-kHFFEd2Qw511CNTRL-anq4osFo2u2wxWmxuidHu2kpbax5GhmVB")
+TAILSCALE_AUTHKEY = os.environ.get("TAILSCALE_AUTHKEY")  # потрібно додати у Railway Secrets
 HOSTNAME = "railway-server"
 
 print("[*] Піднімаємо Tailscale...")
+# Запускаємо Tailscale CLI
 subprocess.run(f"tailscale up --authkey={TAILSCALE_AUTHKEY} --hostname={HOSTNAME}", shell=True)
 
 # Отримуємо Tailscale IP
@@ -34,6 +35,7 @@ print("[*] Тепер ти можеш підключатися через SSH/т
 # ============================
 img_url = "https://example.com/screenshot.png"  # заміни на потрібне
 img_path = "/tmp/screenshot.png"
+
 print(f"[*] Завантажуємо зображення з {img_url}")
 response = requests.get(img_url)
 with open(img_path, "wb") as f:
