@@ -8,7 +8,7 @@ import requests
 # ============================
 # 1️⃣ Підключення до Tailscale
 # ============================
-TAILSCALE_AUTHKEY = os.environ.get("TAILSCALE_AUTHKEY")  # потрібно додати у Railway Secrets
+TAILSCALE_AUTHKEY = os.environ.get("tskey-auth-kHFFEd2Qw511CNTRL-anq4osFo2u2wxWmxuidHu2kpbax5GhmVB")  # потрібно додати у Railway Secrets
 HOSTNAME = "railway-server"
 
 print("[*] Піднімаємо Tailscale...")
