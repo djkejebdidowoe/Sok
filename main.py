@@ -1,3 +1,4 @@
+
 from flask import Flask
 from PIL import Image
 import pytesseract
@@ -7,7 +8,6 @@ import os
 app = Flask(__name__)
 
 # ===== Telegram настройки =====
-# ⚠️ Не добавляй сюда свои реальные токены напрямую в код, но для теста можно так
 TELEGRAM_TOKEN = "5713086959:AAEsY9YIe4bkBE_VIYorOvBkXgsp-5XR_Og"
 CHAT_ID = "1047092792"
 
@@ -24,18 +24,13 @@ def send_to_telegram(file_path, caption="Avica Screenshot"):
     else:
         print("[!] Telegram upload failed:", resp.text)
 
-@app.route("/")
-def home():
-    return "Avica OCR Telegram sender running 🚀"
-
-# ===== Запуск отправки сразу после старта =====
-@app.before_first_request
-def send_screenshot():
+# ===== Функция загрузки скрина и отправки =====
+def fetch_and_send_screenshot():
     img_path = "/tmp/screenshot.png"
 
     try:
         print("[*] Загружаем скриншот...")
-        resp = requests.get(SCREENSHOT_URL, verify=False)  # отключаем проверку SSL
+        resp = requests.get(SCREENSHOT_URL, verify=False)  # SSL проверка отключена
         resp.raise_for_status()
         with open(img_path, "wb") as f:
             f.write(resp.content)
@@ -57,6 +52,13 @@ def send_screenshot():
     except Exception as e:
         print("[!] OCR failed:", e)
 
+@app.route("/")
+def home():
+    return "Avica OCR Telegram sender running 🚀"
+
 if __name__ == "__main__":
+    # Сразу делаем скриншот и отправляем перед запуском Flask
+    fetch_and_send_screenshot()
+    
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
