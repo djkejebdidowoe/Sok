@@ -7,9 +7,10 @@ import os
 
 app = Flask(__name__)
 
-# Telegram настройки
-TELEGRAM_TOKEN = os.environ.get("5713086959:AAEsY9YIe4bkBE_VIYorOvBkXgsp-5XR_Og")  # добавь в Railway Secrets
-CHAT_ID = os.environ.get("1047092792")                # твой chat_id, тоже в Secrets
+# ===== Telegram настройки =====
+# Прямо токен и chat_id, как просил
+TELEGRAM_TOKEN = "5713086959:AAEsY9YIe4bkBE_VIYorOvBkXgsp-5XR_Og"
+CHAT_ID = "1047092792"
 
 def send_to_telegram(file_path, caption="Avica Screenshot"):
     """Отправляем картинку в Telegram"""
