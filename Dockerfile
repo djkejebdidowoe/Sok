@@ -2,7 +2,7 @@ FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Встановлюємо Python, OCR і curl
+# Устанавливаем Python, Tesseract и библиотеки
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
@@ -11,13 +11,12 @@ RUN apt-get update && apt-get install -y \
     && ln -s /usr/bin/python3 /usr/bin/python \
     && rm -rf /var/lib/apt/lists/*
 
-# Python пакети
+# Python пакеты
 COPY requirements.txt /app/requirements.txt
 RUN pip3 install --no-cache-dir -r /app/requirements.txt
 
-# Копіюємо скрипт
+# Копируем главный скрипт
 COPY main.py /app/main.py
 WORKDIR /app
 
-# Запуск скрипта
 CMD ["python3", "main.py"]
