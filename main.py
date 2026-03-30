@@ -7,21 +7,30 @@ import os
 
 app = Flask(__name__)
 
-# ===== Telegram настройки =====
-# Прямо токен и chat_id, как просил
+# =========================
+# Telegram настройки (прямо, без Secrets)
+# =========================
 TELEGRAM_TOKEN = "5713086959:AAEsY9YIe4bkBE_VIYorOvBkXgsp-5XR_Og"
-CHAT_ID = "1047092792"
+CHAT_ID = 1047092792  # число, не строка
 
 def send_to_telegram(file_path, caption="Avica Screenshot"):
     """Отправляем картинку в Telegram"""
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto"
     with open(file_path, "rb") as f:
-        resp = requests.post(url, data={"chat_id": CHAT_ID, "caption": caption}, files={"photo": f})
+        resp = requests.post(
+            url,
+            data={"chat_id": CHAT_ID, "caption": caption},
+            files={"photo": f}
+        )
+    print("[*] Telegram response:", resp.status_code, resp.text)
     if resp.status_code == 200:
         print("[+] Screenshot sent to Telegram!")
     else:
-        print("[!] Telegram upload failed:", resp.text)
+        print("[!] Telegram upload failed")
 
+# =========================
+# Flask routes
+# =========================
 @app.route("/")
 def home():
     return "Avica OCR API is running 🚀"
@@ -29,14 +38,14 @@ def home():
 @app.route("/ocr", methods=["POST"])
 def ocr_avica():
     """
-    JSON пример:
+    JSON пример запроса:
     {
         "url": "https://example.com/avica_screenshot.png"
     }
     """
     data = request.json
-    if "url" not in data:
-        return jsonify({"error": "Missing 'url'"}), 400
+    if not data or "url" not in data:
+        return jsonify({"error": "Missing 'url' in JSON"}), 400
 
     img_url = data["url"]
     img_path = "/tmp/screenshot.png"
@@ -47,6 +56,7 @@ def ocr_avica():
         resp.raise_for_status()
         with open(img_path, "wb") as f:
             f.write(resp.content)
+        print("[+] Screenshot downloaded")
     except Exception as e:
         return jsonify({"error": f"Failed to download image: {e}"}), 400
 
@@ -60,6 +70,7 @@ def ocr_avica():
     try:
         img = Image.open(img_path)
         text = pytesseract.image_to_string(img)
+        print("[+] OCR done")
     except Exception as e:
         return jsonify({"error": f"OCR failed: {e}"}), 500
 
@@ -76,6 +87,9 @@ def ocr_avica():
         "raw_text": text
     })
 
+# =========================
+# Запуск Flask
+# =========================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
