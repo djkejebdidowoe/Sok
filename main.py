@@ -1,64 +1,50 @@
 
-from flask import Flask
-from PIL import Image
-import pytesseract
-import requests
+from flask import Flask, jsonify
+import subprocess
 import os
+import requests
 
 app = Flask(__name__)
 
-# ===== Telegram настройки =====
-TELEGRAM_TOKEN = "5713086959:AAEsY9YIe4bkBE_VIYorOvBkXgsp-5XR_Og"
+# Telegram настройки
+TELEGRAM_TOKEN = "5713086959:AAEsY9YIe4bkBE_VIYorOvBkXgsp-5XR_Og"  # можна пізніше в Secrets
 CHAT_ID = "1047092792"
 
-# ===== Ссылка на скриншот Avica =====
-SCREENSHOT_URL = "https://example.com/avica_screenshot.png"  # замени на реальный URL
-
-# ===== Функция отправки скрина в Telegram =====
-def send_to_telegram(file_path, caption="Avica Screenshot"):
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto"
-    with open(file_path, "rb") as f:
-        resp = requests.post(url, data={"chat_id": CHAT_ID, "caption": caption}, files={"photo": f})
+def send_text_to_telegram(text, caption="Avica Terminal Output"):
+    """Відправляємо текст у Telegram"""
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    resp = requests.post(url, data={
+        "chat_id": CHAT_ID,
+        "text": f"{caption}:\n```\n{text}\n```",
+        "parse_mode": "Markdown"
+    })
     if resp.status_code == 200:
-        print("[+] Screenshot sent to Telegram!")
+        print("[+] Terminal output sent to Telegram!")
     else:
-        print("[!] Telegram upload failed:", resp.text)
-
-# ===== Функция загрузки скрина и отправки =====
-def fetch_and_send_screenshot():
-    img_path = "/tmp/screenshot.png"
-
-    try:
-        print("[*] Загружаем скриншот...")
-        resp = requests.get(SCREENSHOT_URL, verify=False)  # SSL проверка отключена
-        resp.raise_for_status()
-        with open(img_path, "wb") as f:
-            f.write(resp.content)
-        print("[*] Скриншот загружен!")
-    except Exception as e:
-        print("[!] Failed to download image:", e)
-        return
-
-    try:
-        send_to_telegram(img_path)
-    except Exception as e:
-        print("[!] Telegram send failed:", e)
-
-    # OCR (для интереса)
-    try:
-        img = Image.open(img_path)
-        text = pytesseract.image_to_string(img)
-        print("[*] OCR Result:\n", text)
-    except Exception as e:
-        print("[!] OCR failed:", e)
+        print("[!] Telegram send failed:", resp.text)
 
 @app.route("/")
 def home():
-    return "Avica OCR Telegram sender running 🚀"
+    return "Avica CLI Text Screenshot API 🚀"
+
+@app.route("/run_avica")
+def run_avica():
+    """Запускаємо Avica CLI і відправляємо текст"""
+    try:
+        # Тут заміни команду на реальну Avica CLI
+        result = subprocess.run(
+            ["echo", "This is a demo Avica terminal output"], 
+            capture_output=True, text=True, check=True
+        )
+        output = result.stdout
+    except Exception as e:
+        output = f"Failed to run Avica CLI: {e}"
+
+    # Відправляємо у Telegram
+    send_text_to_telegram(output)
+
+    return jsonify({"status": "sent", "output": output})
 
 if __name__ == "__main__":
-    # Сразу делаем скриншот и отправляем перед запуском Flask
-    fetch_and_send_screenshot()
-    
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
